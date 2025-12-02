@@ -34,7 +34,6 @@ process_rotation(const char *instr, int *pos, int *zero_count)
 
     int old_pos = *pos;
 
-    // Calculate new position
     if (direction == 'L') {
         *pos = (*pos - dist) % DIAL_SZ;
         if (*pos < 0)
@@ -43,11 +42,8 @@ process_rotation(const char *instr, int *pos, int *zero_count)
         *pos = (*pos + dist) % DIAL_SZ;
     }
 
-    // Count how many times we point at 0 during this rotation
-    // Complete rotations each pass through 0 once
     *zero_count += dist / DIAL_SZ;
 
-    // Check the partial rotation
     int partial = dist % DIAL_SZ;
     if (partial > 0 && old_pos != 0) {
         if (direction == 'R') {
