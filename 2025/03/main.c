@@ -55,7 +55,7 @@ find_maximum_subsequence(const char *digits, unsigned long long *total, int subs
 
     unsigned long long joltage = 0;
     for (int i = 0; i < out_index; i++)
-        joltage = joltage* 10 + (chosen[i] - '0');
+        joltage = joltage * 10 + (chosen[i] - '0');
 
     if (total)
         *total += joltage;
