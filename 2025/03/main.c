@@ -17,52 +17,51 @@ read_line(FILE *fname, char *buffer, size_t bufsz)
 }
 
 unsigned long long
-find_maximum_subsequence(const char *line, unsigned long long *total, int k)
+find_maximum_subsequence(const char *digits, unsigned long long *total, int subseq_len)
 {
-    size_t len = strlen(line);
-    if (len < k)
+    size_t n = strlen(digits);
+    if (n < subseq_len)
         return 0;
 
-    char res[128];
-    if (k >= (int)sizeof(res))
-        k = sizeof(res) - 1;
-    
-    int start = 0;
-    int outpos = 0;
+    char chosen[128];
+    if (subseq_len >= (int)sizeof(chosen))
+        subseq_len = sizeof(chosen) - 1;
 
-    for (int pick = 0; pick < k; ++pick) {
-        int remaining = k - pick;
-        int search_end = len - remaining;
+    int next_search_start = 0;
+    int out_index = 0;
+
+    for (int picked = 0; picked < subseq_len; picked++) {
+
+        int still_needed = subseq_len - picked;
+        int last_allowed_pos = n - still_needed;  // inclusive
 
         char best_digit = '0' - 1;
-        int best_pos = start;
+        int best_digit_pos = next_search_start;
 
-        for (int i = start; i <= search_end; ++i) {
-            if (line[i] > best_digit) {
-                best_digit = line[i];
-                best_pos = i;
-
-                if (best_digit == '9')
+        for (int pos = next_search_start; pos <= last_allowed_pos; pos++) {
+            if (digits[pos] > best_digit) {
+                best_digit = digits[pos];
+                best_digit_pos = pos;
+                if (best_digit == '9')   // can't do better
                     break;
             }
         }
 
-        res[outpos++] = best_digit;
-        start = best_pos + 1;
+        chosen[out_index++] = best_digit;
+        next_search_start = best_digit_pos + 1;
     }
 
-    res[outpos] = '\0';
+    chosen[out_index] = '\0';
 
     unsigned long long value = 0;
-    for (int i = 0; i < outpos; ++i)
-        value = value * 10 + (res[i] - '0');
+    for (int i = 0; i < out_index; i++)
+        value = value * 10 + (chosen[i] - '0');
 
     if (total)
         *total += value;
 
     return value;
 }
-
 
 int
 main(int argc, char **argv)
