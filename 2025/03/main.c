@@ -31,7 +31,6 @@ find_maximum_subsequence(const char *digits, unsigned long long *total, int subs
     int out_index = 0;
 
     for (int picked = 0; picked < subseq_len; picked++) {
-
         int remaining = subseq_len - picked;
         int last_allowed_pos = n - remaining;  // inclusive
 
@@ -42,7 +41,8 @@ find_maximum_subsequence(const char *digits, unsigned long long *total, int subs
             if (digits[pos] > best_digit) {
                 best_digit = digits[pos];
                 best_digit_pos = pos;
-                if (best_digit == '9')   // can't do better
+
+                if (best_digit == '9')
                     break;
             }
         }
