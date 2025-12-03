@@ -53,14 +53,14 @@ find_maximum_subsequence(const char *digits, unsigned long long *total, int subs
 
     chosen[out_index] = '\0';
 
-    unsigned long long value = 0;
+    unsigned long long joltage = 0;
     for (int i = 0; i < out_index; i++)
-        value = value * 10 + (chosen[i] - '0');
+        joltage = joltage* 10 + (chosen[i] - '0');
 
     if (total)
-        *total += value;
+        *total += joltage;
 
-    return value;
+    return joltage;
 }
 
 int
