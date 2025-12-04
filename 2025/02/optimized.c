@@ -7,7 +7,9 @@
 #define HASH_SIZE (1024)
 #define HASH_MASK (HASH_SIZE - 1)
 
-static inline uint64_t pow10_u(int n) {
+static inline uint64_t
+pow10_u(int n)
+{
     static const uint64_t table[20] = {
         1ULL, 10ULL, 100ULL, 1000ULL, 10000ULL,
         100000ULL, 1000000ULL, 10000000ULL,
@@ -21,7 +23,9 @@ static inline uint64_t pow10_u(int n) {
     return table[n];
 }
 
-static inline int count_digits_u64(uint64_t x) {
+static inline int
+count_digits_u64(uint64_t x)
+{
     static const uint64_t pow10_table[20] = {
         1ULL,
         10ULL,
@@ -66,12 +70,15 @@ struct hash_set {
 };
 
 /* MurmurHash3 64-bit finalizer */
-static inline uint64_t hash_u64(uint64_t x) {
+static inline uint64_t
+hash_u64(uint64_t x)
+{
     x ^= x >> 33;
     x *= 0xff51afd7ed558ccdULL;
     x ^= x >> 33;
     x *= 0xc4ceb9fe1a85ec53ULL;
     x ^= x >> 33;
+
     return x;
 }
 
