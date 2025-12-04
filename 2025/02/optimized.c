@@ -95,9 +95,10 @@ collect_invalid_in_range(uint64_t start, uint64_t end, uint64_t *candidates, int
     }
 }
 
+
 int main(int argc, char **argv) {
     double start_time = get_time_ns();
-    
+
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <input_file>\n", argv[0]);
         return 1;
@@ -122,13 +123,7 @@ int main(int argc, char **argv) {
 
     double parse_time = get_time_ns();
 
-    uint64_t *candidates = malloc(MAX_CANDIDATES * sizeof(uint64_t));
-
-    if (!candidates) {
-        perror("malloc failed");
-        return 1;
-    }
-
+    uint64_t candidates[MAX_CANDIDATES];
     int cand_count = 0;
 
     char *token = strtok(line, ",");
@@ -162,20 +157,18 @@ int main(int argc, char **argv) {
 
     double end_time = get_time_ns();
 
-    free(candidates);
-
     printf("Sum of invalid IDs: %llu\n", total);
     printf("\nTiming breakdown:\n");
-    printf("  File I/O:        %.0f ns (%.3f µs)\n", 
+    printf("  File I/O:        %.0f ns (%.3f µs)\n",
            parse_time - start_time, (parse_time - start_time) / 1000.0);
-    printf("  Collection:      %.0f ns (%.3f µs)\n", 
+    printf("  Collection:      %.0f ns (%.3f µs)\n",
            collect_time - parse_time, (collect_time - parse_time) / 1000.0);
-    printf("  Sort:            %.0f ns (%.3f µs)\n", 
+    printf("  Sort:            %.0f ns (%.3f µs)\n",
            sort_time - collect_time, (sort_time - collect_time) / 1000.0);
-    printf("  Dedup & Sum:     %.0f ns (%.3f µs)\n", 
+    printf("  Dedup & Sum:     %.0f ns (%.3f µs)\n",
            end_time - sort_time, (end_time - sort_time) / 1000.0);
-    printf("  Total:           %.0f ns (%.3f µs)\n", 
+    printf("  Total:           %.0f ns (%.3f µs)\n",
            end_time - start_time, (end_time - start_time) / 1000.0);
-    
+
     return 0;
 }
