@@ -91,7 +91,7 @@ main(int argc, char **argv)
     }
     
     FILE *fp = fopen(argv[1], "r");
-    if (!fp) {
+    if (fp == NULL) {
         perror("Error opening file");
         fclose(fp);
         return 1;
@@ -101,7 +101,7 @@ main(int argc, char **argv)
     char grid_copy[MAX_SIZE][MAX_SIZE];
     int rows = 0, cols = 0;
     
-    while (fgets(grid[rows], MAX_SIZE, fp)) {
+    while (fgets(grid[rows], MAX_SIZE, fp) != NULL) {
         grid[rows][strcspn(grid[rows], "\n")] = 0;
         
         if (cols == 0)
