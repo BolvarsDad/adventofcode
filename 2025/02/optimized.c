@@ -127,6 +127,7 @@ collect_invalid_in_range(uint64_t start, uint64_t end, struct hash_set *hs, uint
             uint64_t base = pow10_u(per_rep);
 
             uint64_t factor = 1;
+#pragma unroll
             for (int i = 1; i < rep; i++)
                 factor = factor * base + 1;
 
