@@ -13,7 +13,7 @@
 
 #define MAX_CANDIDATES 100000
 
-static uint64_t pow10_u(int n) {
+static inline uint64_t pow10_u(int n) {
     static const uint64_t table[20] = {
         1ULL, 10ULL, 100ULL, 1000ULL, 10000ULL,
         100000ULL, 1000000ULL, 10000000ULL,
@@ -25,6 +25,38 @@ static uint64_t pow10_u(int n) {
         10000000000000000000ULL
     };
     return table[n];
+}
+
+static inline int count_digits_u64(uint64_t x) {
+    static const uint64_t pow10_table[20] = {
+        1ULL,
+        10ULL,
+        100ULL,
+        1000ULL,
+        10000ULL,
+        100000ULL,
+        1000000ULL,
+        10000000ULL,
+        100000000ULL,
+        1000000000ULL,
+        10000000000ULL,
+        100000000000ULL,
+        1000000000000ULL,
+        10000000000000ULL,
+        100000000000000ULL,
+        1000000000000000ULL,
+        10000000000000000ULL,
+        100000000000000000ULL,
+        1000000000000000000ULL,
+        10000000000000000000ULL
+    };
+
+    // integer approximation of log10(x) = floor(log2(x) * log10(2))
+    int bits   = 64 - __builtin_clzll(x);
+    int guess  = (19 * bits) >> 6;
+
+    // ensure exactness
+    return guess + (x >= pow10_table[guess]);
 }
 
 double
@@ -50,8 +82,8 @@ compare_uint64(const void *a, const void *b)
 void
 collect_invalid_in_range(uint64_t start, uint64_t end, uint64_t *candidates, int *count)
 {
-    int min_exp = (int)log10(start);
-    int max_exp = (int)log10(end);
+    int min_exp = count_digits_u64(start) - 1;
+    int max_exp = count_digits_u64(end)   - 1;
 
     for (int exp = min_exp; exp <= max_exp; exp++) {
         int digits = exp + 1;
@@ -64,6 +96,8 @@ collect_invalid_in_range(uint64_t start, uint64_t end, uint64_t *candidates, int
             uint64_t base = pow10_u(per_rep);
 
             uint64_t factor = 1;
+
+#pragma unroll
             for (int i = 1; i < rep; i++) {
                 factor = factor * base + 1;
             }
@@ -96,7 +130,9 @@ collect_invalid_in_range(uint64_t start, uint64_t end, uint64_t *candidates, int
 }
 
 
-int main(int argc, char **argv) {
+int
+main(int argc, char **argv)
+{
     double start_time = get_time_ns();
 
     if (argc != 2) {
@@ -142,18 +178,19 @@ int main(int argc, char **argv) {
 
     double collect_time = get_time_ns();
 
-    // Sort all candidates
     qsort(candidates, cand_count, sizeof(uint64_t), compare_uint64);
 
     double sort_time = get_time_ns();
 
     // Sum while deduplicating
-    uint64_t total = 0;
-    for (int i = 0; i < cand_count; i++) {
-        if (i == 0 || candidates[i] != candidates[i-1]) {
-            total += candidates[i];
-        }
-    }
+   uint64_t total = 0;
+   uint64_t last = 0;
+   for (int i = 0; i < cand_count; i++) {
+       if (candidates[i] != last) {
+           total += candidates[i];
+           last = candidates[i];
+       }
+   }
 
     double end_time = get_time_ns();
 
