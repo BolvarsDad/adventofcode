@@ -1,8 +1,17 @@
+/* 
+ *  Big thanks to CordlessCoder for informing me about this approach.
+ *  https://github.com/CordlessCoder/AoC2025/blob/main/src/bin/02.rs
+ *
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdint.h>
+#include <string.h>
 #include <math.h>
+#include <time.h>
+
+#define MAX_CANDIDATES 100000
 
 static uint64_t pow10_u(int n) {
     static const uint64_t table[20] = {
@@ -18,38 +27,29 @@ static uint64_t pow10_u(int n) {
     return table[n];
 }
 
-// hash set for deduplication
-#define MAX_CANDIDATES 10000
-
-struct candidate_set
+double
+get_time_ns(void)
 {
-    uint64_t values[MAX_CANDIDATES];
-    int count;
-};
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000000000.0 + ts.tv_nsec;
+}
 
 int
-contains(struct candidate_set *set, uint64_t value) {
-    for (int i = 0; i < set->count; i++) {
-        if (set->values[i] == value) return 1;
-    }
+compare_uint64(const void *a, const void *b)
+{
+    uint64_t ua = *(const uint64_t *)a;
+    uint64_t ub = *(const uint64_t *)b;
+
+    if (ua < ub) return -1;
+    if (ua > ub) return 1;
+
     return 0;
 }
 
 void
-add(struct candidate_set *set, uint64_t value) {
-    if (!contains(set, value) && set->count < MAX_CANDIDATES) {
-        set->values[set->count++] = value;
-    }
-}
-
-
-uint64_t
-sum_invalid_in_range(uint64_t start, uint64_t end)
+collect_invalid_in_range(uint64_t start, uint64_t end, uint64_t *candidates, int *count)
 {
-    struct candidate_set set = {0};
-
-    printf("  Range %llu-%llu:\n", start, end);
-
     int min_exp = (int)log10(start);
     int max_exp = (int)log10(end);
 
@@ -63,14 +63,12 @@ sum_invalid_in_range(uint64_t start, uint64_t end)
             int per_rep = digits / rep;
             uint64_t base = pow10_u(per_rep);
 
-            // build factor = 1 + base + base^2 + ...
             uint64_t factor = 1;
             for (int i = 1; i < rep; i++) {
                 factor = factor * base + 1;
             }
 
             uint64_t min_seq = start / factor;
-
             if (start % factor)
                 min_seq++;
 
@@ -87,30 +85,19 @@ sum_invalid_in_range(uint64_t start, uint64_t end)
             if (min_seq > max_seq)
                 continue;
 
-            printf("    digits=%d, rep=%d, per_rep=%d, factor=%llu, seq_range=%llu..%llu\n",
-                   digits, rep, per_rep, factor, min_seq, max_seq);
-
             for (uint64_t seq = min_seq; seq <= max_seq; seq++) {
                 uint64_t candidate = seq * factor;
                 if (candidate >= start && candidate <= end) {
-                    printf("      Found: %llu (seq %llu * factor %llu)%s\n",
-                           candidate, seq, factor,
-                           contains(&set, candidate) ? " [DUPLICATE]" : "");
-                    add(&set, candidate);
+                    candidates[(*count)++] = candidate;
                 }
             }
         }
     }
-
-    uint64_t total = 0;
-    for (int i = 0; i < set.count; i++) {
-        total += set.values[i];
-    }
-
-    return total;
 }
 
 int main(int argc, char **argv) {
+    double start_time = get_time_ns();
+    
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <input_file>\n", argv[0]);
         return 1;
@@ -124,30 +111,71 @@ int main(int argc, char **argv) {
 
     char *line = NULL;
     size_t len = 0;
+
     if (getline(&line, &len, fp) == -1) {
         perror("Error reading file");
         fclose(fp);
         return 1;
     }
+
     fclose(fp);
 
-    uint64_t total = 0;
+    double parse_time = get_time_ns();
+
+    uint64_t *candidates = malloc(MAX_CANDIDATES * sizeof(uint64_t));
+
+    if (!candidates) {
+        perror("malloc failed");
+        return 1;
+    }
+
+    int cand_count = 0;
+
     char *token = strtok(line, ",");
 
     while (token != NULL) {
         uint64_t start, end;
+
         if (sscanf(token, "%llu-%llu", &start, &end) == 2) {
-            uint64_t range_sum = sum_invalid_in_range(start, end);
-            printf("  Subtotal for this range: %llu\n\n", range_sum);
-            total += range_sum;
+            collect_invalid_in_range(start, end, candidates, &cand_count);
         }
+
         token = strtok(NULL, ",");
     }
 
     free(line);
 
+    double collect_time = get_time_ns();
+
+    // Sort all candidates
+    qsort(candidates, cand_count, sizeof(uint64_t), compare_uint64);
+
+    double sort_time = get_time_ns();
+
+    // Sum while deduplicating
+    uint64_t total = 0;
+    for (int i = 0; i < cand_count; i++) {
+        if (i == 0 || candidates[i] != candidates[i-1]) {
+            total += candidates[i];
+        }
+    }
+
+    double end_time = get_time_ns();
+
+    free(candidates);
+
     printf("Sum of invalid IDs: %llu\n", total);
-    printf("Expected: 15704845910\n");
-    printf("Difference: %lld\n", (int64_t)total - 15704845910);
+    printf("\nTiming breakdown:\n");
+    printf("  File I/O:        %.0f ns (%.3f µs)\n", 
+           parse_time - start_time, (parse_time - start_time) / 1000.0);
+    printf("  Collection:      %.0f ns (%.3f µs)\n", 
+           collect_time - parse_time, (collect_time - parse_time) / 1000.0);
+    printf("  Sort:            %.0f ns (%.3f µs)\n", 
+           sort_time - collect_time, (sort_time - collect_time) / 1000.0);
+    printf("  Dedup & Sum:     %.0f ns (%.3f µs)\n", 
+           end_time - sort_time, (end_time - sort_time) / 1000.0);
+    printf("  Total:           %.0f ns (%.3f µs)\n", 
+           end_time - start_time, (end_time - start_time) / 1000.0);
+    
     return 0;
 }
